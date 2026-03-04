@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Trading Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{background:#0f172a;color:white;font-family:Arial;margin:20px}
+.card{background:#1e293b;padding:20px;border-radius:10px;margin-bottom:20px}
+a{color:#38bdf8;text-decoration:none}
+.profit{color:#22c55e}
+.loss{color:#ef4444}
+select{padding:5px}
+</style>
+</head>
+<body>
+
+<h1>📊 Trading Dashboard</h1>
+<a href="journal.html">➕ Add Trade</a>
+
+<div class="card">
+<h2>Monthly Net P&L: ₹ <span id="monthlyPL">0</span></h2>
+<p>Total Trades: <span id="totalTrades"></span></p>
+<p>Win Rate: <span id="winRate"></span>%</p>
+<p>Avg Profit: ₹ <span id="avgProfit"></span></p>
+<p>Avg Loss: ₹ <span id="avgLoss"></span></p>
+</div>
+
+<div class="card">
+<h3>Monthly Performance</h3>
+<select id="monthSelect"></select>
+<canvas id="monthlyChart"></canvas>
+</div>
+
+<div class="card">
+<h3>Equity Curve</h3>
+<canvas id="equityChart"></canvas>
+</div>
+
+<script>
+let trades = JSON.parse(localStorage.getItem("trades")) || [];
+
+function loadMonths(){
+let months = [...new Set(trades.map(t=>t.date.slice(0,7)))];
+let select=document.getElementById("monthSelect");
+months.forEach(m=>{
+let opt=document.createElement("option");
+opt.value=m;opt.text=m;
+select.appendChild(opt);
+});
+select.onchange=updateDashboard;
+}
+
+function updateDashboard(){
+let month=document.getElementById("monthSelect").value;
+let filtered=trades.filter(t=>t.date.startsWith(month));
+let total=filtered.reduce((a,b)=>a+b.pl,0);
+let wins=filtered.filter(t=>t.pl>0);
+let losses=filtered.filter(t=>t.pl<0);
+
+document.getElementById("monthlyPL").innerHTML=
+`<span class="${total>=0?'profit':'loss'}">${total.toFixed(2)}</span>`;
+document.getElementById("totalTrades").innerText=filtered.length;
+document.getElementById("winRate").innerText=
+filtered.length?((wins.length/filtered.length)*100).toFixed(1):0;
+document.getElementById("avgProfit").innerText=
+wins.length?(wins.reduce((a,b)=>a+b.pl,0)/wins.length).toFixed(2):0;
+document.getElementById("avgLoss").innerText=
+losses.length?(losses.reduce((a,b)=>a+b.pl,0)/losses.length).toFixed(2):0;
+
+let daily={};
+filtered.forEach(t=>{
+if(!daily[t.date])daily[t.date]=0;
+daily[t.date]+=t.pl;
+});
+
+new Chart(document.getElementById("monthlyChart"),{
+type:'bar',
+data:{
+labels:Object.keys(daily),
+datasets:[{
+data:Object.values(daily),
+backgroundColor:Object.values(daily).map(v=>v>=0?'#22c55e':'#ef4444')
+}]
+}
+});
+
+let equity=0;
+let curve=[];
+filtered.forEach(t=>{
+equity+=t.pl;
+curve.push(equity);
+});
+
+new Chart(document.getElementById("equityChart"),{
+type:'line',
+data:{labels:Object.keys(daily),
+datasets:[{data:curve,borderColor:'#38bdf8'}]}
+});
+}
+
+loadMonths();
+if(trades.length)updateDashboard();
+</script>
+</body>
+</html>
