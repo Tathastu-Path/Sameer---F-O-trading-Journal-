@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Trading Journal</title>
+<style>
+body{background:#0f172a;color:white;font-family:Arial;margin:20px}
+input,select,textarea{margin:5px;padding:5px}
+table{width:100%;border-collapse:collapse;margin-top:20px}
+th,td{border:1px solid gray;padding:8px}
+.profit{color:#22c55e}
+.loss{color:#ef4444}
+button{padding:5px 10px}
+a{color:#38bdf8;text-decoration:none}
+</style>
+</head>
+<body>
+
+<h1>📒 Add Trade</h1>
+<a href="index.html">⬅ Back to Dashboard</a><br><br>
+
+<input type="date" id="date">
+
+<select id="lot">
+<option value="65">Nifty (65)</option>
+<option value="30">BankNifty (30)</option>
+<option value="20">Sensex (20)</option>
+</select>
+
+<select id="type">
+<option value="CE">Call</option>
+<option value="PE">Put</option>
+</select>
+
+<input type="number" id="entry" placeholder="Entry">
+<input type="number" id="exit" placeholder="Exit">
+<br>
+<textarea id="reason" placeholder="Reason"></textarea>
+<textarea id="remarks" placeholder="Remarks"></textarea>
+<br>
+<button onclick="saveTrade()">Save</button>
+
+<table>
+<thead>
+<tr>
+<th>Date</th><th>Lot</th><th>Type</th>
+<th>Entry</th><th>Exit</th><th>P&L</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody id="table"></tbody>
+</table>
+
+<script>
+let trades=JSON.parse(localStorage.getItem("trades"))||[];
+let editIndex=-1;
+
+function saveTrade(){
+let date=document.getElementById("date").value;
+let lot=parseInt(document.getElementById("lot").value);
+let type=document.getElementById("type").value;
+let entry=parseFloat(document.getElementById("entry").value);
+let exit=parseFloat(document.getElementById("exit").value);
+if(!date||isNaN(entry)||isNaN(exit))return alert("Fill properly");
+let pl=(exit-entry)*lot;
+
+let trade={date,lot,type,entry,exit,pl};
+if(editIndex==-1)trades.push(trade);
+else{trades[editIndex]=trade;editIndex=-1;}
+
+localStorage.setItem("trades",JSON.stringify(trades));
+display();
+}
+
+function display(){
+let tb=document.getElementById("table");
+tb.innerHTML="";
+trades.forEach((t,i)=>{
+tb.innerHTML+=`
+<tr>
+<td>${t.date}</td>
+<td>${t.lot}</td>
+<td>${t.type}</td>
+<td>${t.entry}</td>
+<td>${t.exit}</td>
+<td class="${t.pl>=0?'profit':'loss'}">${t.pl.toFixed(2)}</td>
+<td>
+<button onclick="edit(${i})">Edit</button>
+<button onclick="del(${i})">Delete</button>
+</td>
+</tr>`;
+});
+}
+
+function edit(i){
+let t=trades[i];
+document.getElementById("date").value=t.date;
+document.getElementById("entry").value=t.entry;
+document.getElementById("exit").value=t.exit;
+editIndex=i;
+}
+
+function del(i){
+trades.splice(i,1);
+localStorage.setItem("trades",JSON.stringify(trades));
+display();
+}
+
+display();
+</script>
+</body>
+</html>
